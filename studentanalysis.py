@@ -1,5 +1,5 @@
 import csv
-
+import os
 
 class Student:
     def __init__(self, student_id, first_name, last_name, programme, marks):
@@ -8,6 +8,8 @@ class Student:
         self.last_name = last_name
         self.programme = programme
         self.marks = marks
+
+#Accessing student details        
 
     def get_student_id(self):
         return self.student_id
@@ -24,6 +26,8 @@ class Student:
     def get_marks(self):
         return self.marks
 
+#Replacing existing values       
+
     def set_first_name(self, first_name):
         self.first_name = first_name
 
@@ -38,7 +42,15 @@ class Student:
 
     def calculate_average(self):
         if len(self.marks) == 0:
-            return 0
+            raise ValueError("No marks to be calculated")
+
+        for mark in self.marks:
+            if isinstance(mark, bool) or not isinstance(mark, (int, float)):
+                raise ValueError("All marks must be numeric values.")
+          
+            if mark < 0 or mark > 100:
+                raise ValueError("Marks must be between 0 and 100.")
+ 
         return sum(self.marks) / len(self.marks)
 
     def determine_grade(self):
@@ -54,8 +66,21 @@ class Student:
         else:
             return 'F'
 
+    def is_eligible_for_scholarship(self):
+        return self.calculate_average() >= 88
+
     def display_student_info(self):
         pass
+
+    def generate_report_card(self):
+        report_card = f"Report Card for {self.first_name} {self.last_name}\n"
+        report_card += f"Programme: {self.programme}\n"
+        report_card += f"Marks: {self.marks}\n"
+        report_card += f"Average: {self.calculate_average()}\n"
+        report_card += f"Grade: {self.determine_grade()}\n"
+        report_card += f"Scholarship Eligibility: {'Yes' if self.is_eligible_for_scholarship() else 'No'}\n"
+        return report_card
+
 
 class AIUStudent(Student):
     def display_student_info(self):
@@ -66,7 +91,20 @@ class AIUStudent(Student):
         print(f"Average: {self.calculate_average()}")
         print(f"Grade: {self.determine_grade()}")
 
+class scholarshipEligibility(AIUStudent):
+    def display_student_info(self):
+        super().display_student_info()
+        if self.is_eligible_for_scholarship():
+            print("Eligible for Scholarship: Yes")
+        else:
+            print("Eligible for Scholarship: No")
 
+    @staticmethod
+    def display_scholarship_eligible_students(self, students):
+        print("Scholarship Eligible Students:")
+        for student in students:
+            if student.is_eligible_for_scholarship():
+                print(f"{student.first_name} {student.last_name} - Average: {student.calculate_average():.2f}")
 student1 = AIUStudent(
     "25/222",
     "Sandra",
@@ -82,126 +120,97 @@ class PerformanceAnalyzer:
         self.students = students
 
     def highest_average(self):
-        highest_avg_student = max(self.students, key=lambda student: student.calculate_average())
-        return highest_avg_student
+        if not self.students:
+            raise ValueError("No students to analyse!")
+        return max(self.students, key=lambda student: student.calculate_average())
 
     def lowest_average(self):
-        lowest_avg_student = min(self.students, key=lambda student: student.calculate_average())
-        return lowest_avg_student
+        if not self.students:
+            raise ValueError("No students to analyse!")
+        return min(self.students, key=lambda student: student.calculate_average()) 
 
     def average_marks(self):
         if len(self.students) == 0:
             return 0
-
         total_marks = sum(student.calculate_average() for student in self.students)
         return total_marks / len(self.students)
 
-student1 = AIUStudent("25/222", "Sandra", "Mutegi", "BBA", marks=[90, 79, 100, 82, 94])
-student2 = AIUStudent("25/224", "Carlos", "Ndunda", "BAFM", marks=[88, 80, 97, 86, 96])
-student3 = AIUStudent("25/226", "Paul", "Omboga", "DBIT", marks=[86, 81, 94, 96, 98])
-student4 = AIUStudent("25/228", "Ruth", "Mwikali", "BBA", marks=[84, 82, 91, 94, 100])
-student5 = AIUStudent("25/230", "Oscar", "Juma", "BAI", marks=[83, 83, 90, 98, 100])
-student6 = AIUStudent("25/232", "Yusuf", "Hakim", "BAI", marks=[82, 84, 89, 83, 91])
-student7 = AIUStudent("25/234", "Sylvester", "John", "DAI", marks=[81, 85, 88, 90, 95])
-student8 = AIUStudent("25/236", "Abdullahi", "Mohamud", "DAI", marks=[80, 86, 87, 92, 100])
-student9 = AIUStudent("25/238", "Mohamed", "Adan", "DBIT", marks=[79, 87, 86, 97, 99])
-student10 = AIUStudent("25/240", "Shilah", "Wanjiru", "BAFM", marks=[78, 88, 89, 99, 97])
+#Load the CSV file
+def load_students(filename):
+  
+    students = []
+    with open(filename, "r", newline="", encoding="utf-8-sig") as csvfile:
+        rows = list(csv.reader(csvfile))
+ 
+    # Find the header row (skips the title and blank rows)
+    header_index = None
+    for i, row in enumerate(rows):
+        if row and row[0].strip().upper() == "STUDENT ID":
+            header_index = i
+            break
+    if header_index is None:
+        raise ValueError("Could not find a header row starting with 'STUDENT ID'.")
+ 
+    header = [cell.strip().upper() for cell in rows[header_index]]
+    id_col = header.index("STUDENT ID")
+    first_col = header.index("FIRST NAME")
+    last_col = header.index("LAST NAME")
+    programme_col = header.index("PROGRAMME")
+    # Every named column after PROGRAMME is a subject (marks) column
+    mark_cols = [i for i, name in enumerate(header) if name and i > programme_col]
+ 
+    for line_no, row in enumerate(rows[header_index + 1:], start=header_index + 2):
+        if not any(cell.strip() for cell in row):
+            continue  # skip blank rows
+        try:
+            marks = []
+            for i in mark_cols:
+                text = row[i].strip()
+                marks.append(float(text) if "." in text else int(text))
+            student = scholarshipEligibility(
+                student_id=row[id_col].strip(),
+                first_name=row[first_col].strip(),
+                last_name=row[last_col].strip(),
+                programme=row[programme_col].strip(),
+                marks=marks
+            )
+            students.append(student)
+        except (IndexError, ValueError) as error:
+            print(f"Missing line {line_no}: {error}")
+    return students
+ 
 
-students = [student1, student2, student3, student4, student5, student6, student7, student8, student9, student10]
-analyzer = PerformanceAnalyzer(students)
 
-highest_avg_student = analyzer.highest_average()
-lowest_avg_student = analyzer.lowest_average()
+def main():
+    students = [
+        AIUStudent("25/222", "Sandra", "Mutegi", "BBA", marks=[90, 79, 100, 82, 94]),
+        AIUStudent("25/224", "Carlos", "Ndunda", "BAFM", marks=[88, 80, 97, 86, 96]),
+        AIUStudent("25/226", "Paul", "Omboga", "DBIT", marks=[86, 81, 94, 96, 98]),
+        AIUStudent("25/228", "Ruth", "Mwikali", "BBA", marks=[84, 82, 91, 94, 100]),
+        AIUStudent("25/230", "Oscar", "Juma", "BAI", marks=[83, 83, 90, 98, 100]),
+        AIUStudent("25/232", "Yusuf", "Hakim", "BAI", marks=[82, 84, 89, 83, 91]),
+        AIUStudent("25/234", "Sylvester", "John", "DAI", marks=[81, 85, 88, 90, 95]),
+        AIUStudent("25/236", "Abdullahi", "Mohamud", "DAI", marks=[80, 86, 87, 92, 100]),
+        AIUStudent("25/238", "Mohamed", "Adan", "DBIT", marks=[79, 87, 86, 97, 99]),
+        AIUStudent("25/240", "Shilah", "Wanjiru", "BAFM", marks=[78, 88, 89, 99, 97]),
+    ]
 
-print("Highest Average:", highest_avg_student.first_name, highest_avg_student.calculate_average())
-
-print("Lowest Average:", lowest_avg_student.first_name, lowest_avg_student.calculate_average())
-
-print("Overall Average Marks:", analyzer.average_marks())
-
-class scholarshipEligibility(AIUStudent):
-    def __init__(self, student_id, first_name, last_name, programme, marks):
-        super().__init__(
-            student_id,
-            first_name,
-            last_name,
-            programme,
-            marks
-        )
-
-    def is_eligible_for_scholarship(self):
-        average = self.calculate_average()
-        return average >= 88
-
-    def display_student_info(self):
-        super().display_student_info()
-        if self.is_eligible_for_scholarship():
-            print("Eligible for Scholarship: Yes")
-        else:
-            print("Eligible for Scholarship: No")
-
-    def display_scholarship_eligible_students(self, students):
-        print("Scholarship Eligible Students:")
-        for student in students:
-            if student.is_eligible_for_scholarship():
-                print(f"{student.first_name} {student.last_name} - Average: {student.calculate_average()}")
-
-student1 = AIUStudent("25/222", "Sandra", "Mutegi", "BBA", marks=[90, 79, 100, 82, 94])
-student2 = scholarshipEligibility("25/224", "Carlos", "Ndunda", "BAFM", marks=[88, 80, 97, 86, 96])
-students = [student1, student2]
-
-for student in students:
-    student.display_student_info()
+    analyzer = PerformanceAnalyzer(students)
+    highest = analyzer.highest_average()
+    lowest = analyzer.lowest_average()
+    print("Highest Average:", highest.first_name, highest.last_name, round(highest.calculate_average(), 2))
+    print("Lowest Average:", lowest.first_name, lowest.last_name, round(lowest.calculate_average(), 2))
+    print("Overall Average Marks:", round(analyzer.average_marks(), 2))
     print()
 
-    def calculate_average(self):
-        if len(self.marks) == 0:
-            raise ValueError("No marks available to calculate average.")
-        
-        for mark in self.marks:
-            if not isinstance(mark, (int, float)):
-                raise ValueError("All marks must be numeric values.")
+    csv_file = "studentanalysis.csv"
+    if os.path.exists(csv_file):
+        print("Loaded Students from CSV:")
+        for student in load_students(csv_file):
+            student.display_student_info()
+            print()
+    else:
+        print(f"'{csv_file}' not found.")
 
-        for mark in self.marks:
-            if mark < 0 or mark > 100:
-                raise ValueError("Marks must be between 0 and 100.")
-
-        return sum(self.marks) / len(self.marks)
-
-    print("Average of two marks:", student1.calculate_average())
-    print("Average of three marks:", student2.calculate_average())
-
-    def load_students(filename):
-        students = []
-        with open(filename, "r", newline="", encoding="utf-8-sig") as csvfile:
-            reader = csv.reader(csvfile)
-            next(reader)  
-            for row in reader:
-                student = AIUStudent(
-                    student_id=row[0],
-                    first_name=row[1],
-                    last_name=row[2],
-                    programme=row[3],
-                    marks=[int(mark) for mark in row[4].split(',')]
-                )
-                students.append(student)
-        return students
-
-    def generate_report_card(self):
-        report_card = f"Report Card for {self.first_name} {self.last_name}\n"
-        report_card += f"Programme: {self.programme}\n"
-        report_card += f"Marks: {self.marks}\n"
-        report_card += f"Average: {self.calculate_average()}\n"
-        report_card += f"Grade: {self.determine_grade()}\n"
-        report_card += f"Scholarship Eligibility: {'Yes' if self.is_eligible_for_scholarship() else 'No'}\n"
-        return report_card
-
-    print("Highest Average:", highest_avg_student.get_first_name(), highest_avg_student.get_last_name(), highest_avg_student.calculate_average())
-    print("Lowest Average:", lowest_avg_student.get_first_name(), lowest_avg_student.get_last_name(), lowest_avg_student.calculate_average())
-    print("Overall Average Marks:", analyzer.average_marks())
-
-print("Loaded Students from CSV:")
-for student in students:
-    student.display_student_info()
-    print()
-
+if __name__ == "__main__":
+    main()
